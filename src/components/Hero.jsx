@@ -2,10 +2,10 @@ import { useEffect, useRef } from 'react';
 
 // Anillo de ondas que respira, como el boceto: curvas cerradas con ruido senoidal.
 const CURVES = [
-  { k: [7, 11], s: [0.6, 0.4], amp: 0.07, color: '202,169,243' },
-  { k: [9, 13], s: [-0.5, 0.7], amp: 0.06, color: '179,122,212' },
-  { k: [5, 8], s: [0.35, -0.55], amp: 0.08, color: '121,151,230' },
-  { k: [11, 6], s: [-0.7, 0.3], amp: 0.05, color: '202,169,243' },
+  { k: [7, 11], s: [0.6, 0.4], amp: 0.07, color: '255,255,255,.95' },
+  { k: [9, 13], s: [-0.5, 0.7], amp: 0.06, color: '255,255,255,.6' },
+  { k: [5, 8], s: [0.35, -0.55], amp: 0.08, color: '14,21,94,.35' },
+  { k: [11, 6], s: [-0.7, 0.3], amp: 0.05, color: '255,255,255,.8' },
 ];
 
 function RingWave() {
@@ -28,8 +28,8 @@ function RingWave() {
           const x = size / 2 + Math.cos(a) * r, y = size / 2 + Math.sin(a) * r;
           i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
         }
-        ctx.closePath(); ctx.strokeStyle = `rgba(${c.color},.85)`; ctx.lineWidth = 1.6;
-        ctx.shadowColor = `rgba(${c.color},.9)`; ctx.shadowBlur = 14; ctx.stroke();
+        ctx.closePath(); ctx.strokeStyle = `rgba(${c.color})`; ctx.lineWidth = 1.8;
+        ctx.shadowColor = 'rgba(255,255,255,.8)'; ctx.shadowBlur = 12; ctx.stroke();
       });
       if (!still) raf = requestAnimationFrame(draw);
     };
