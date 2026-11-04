@@ -16,7 +16,7 @@ export default function App() {
             <img className="inst-logo" src={logo} alt="Ibero Puebla" />
             <div className="inst-text">
               <strong>Universidad Iberoamericana Puebla</strong>
-              <span>Área de Síntesis y Evaluación: desarrollo de proyectos</span>
+              <span>Área de síntesis y evaluación: desarrollo de proyectos</span>
             </div>
           </div>
           <nav className="nav">

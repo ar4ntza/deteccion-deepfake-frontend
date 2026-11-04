@@ -8,6 +8,10 @@
 }
 *{box-sizing:border-box;margin:0}
 html,body,#root{min-height:100%}
+/* Anula los estilos de la plantilla de Vite (body en flex, #root con ancho máximo y texto centrado) */
+:root{color-scheme:light}
+html body{display:block;margin:0;min-width:0;width:100%}
+html body #root{display:flex;flex-direction:column;width:100%;max-width:none;margin:0;padding:0;text-align:left;min-height:100vh}
 body{background:#E6E8FB;color:var(--ink);font:1.05rem/1.6 var(--body);-webkit-font-smoothing:antialiased}
 :focus-visible{outline:2px solid var(--atlantis);outline-offset:3px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
