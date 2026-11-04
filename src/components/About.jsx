@@ -8,13 +8,12 @@ const SECTIONS = [
 
 export default function About() {
   return (
-    <div className="about-wrap">
-      <article className="glass about">
-        <h2>Acerca del proyecto</h2>
-        {SECTIONS.map(([title, text]) => (
-          <section key={title}><h3>{title}</h3><p>{text}</p></section>
-        ))}
-      </article>
-    </div>
+    <article className="about">
+      <h2>Acerca del proyecto</h2>
+      <span className="rule" />
+      {SECTIONS.map(([title, text]) => (
+        <section key={title}><h3>{title}</h3><p>{text}</p></section>
+      ))}
+    </article>
   );
 }
