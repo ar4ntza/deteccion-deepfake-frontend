@@ -36,7 +36,7 @@ function ResultCard({ name, status, data }) {
   const fake = data ? data.prob_fake >= 0.5 : false;
   const pct = data ? Math.round((fake ? data.prob_fake : 1 - data.prob_fake) * 100) : null;
   return (
-    <section className="glass card" aria-live="polite">
+    <section className={`tile tile--${name === 'CNN' ? 'a' : 'b'}`} aria-live="polite">
       <h3>Modelo {name}</h3>
       {status === 'loading' ? <LoadingWaves /> : <Gauge key={data?.prob_fake} pct={pct} fake={fake} ms={data?.ms} />}
       <p className="verdict">
@@ -69,8 +69,9 @@ export default function Analyzer() {
   const open = () => !busy && input.current.click();
   return (
     <section className="analyzer">
-      <div className="glass panel">
+      <div className="panel">
         <h2>Detección de audio</h2>
+        <span className="rule" />
         <h3>¿Cómo funciona?</h3>
         <ol className="steps">
           <li>Carga tu audio</li><li>Los modelos lo procesan</li><li>Te entregamos los resultados</li>
