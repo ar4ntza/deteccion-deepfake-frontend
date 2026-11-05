@@ -68,8 +68,8 @@ export default function Analyzer() {
 
   const open = () => !busy && input.current.click();
   return (
-    <section className="analyzer">
-      <div className="panel">
+    <section className="split">
+      <div className="pane pane--color panel">
         <h2>Detección de audio</h2>
         <span className="rule" />
         <h3>¿Cómo funciona?</h3>
@@ -88,8 +88,10 @@ export default function Analyzer() {
         {error && <p className="error" role="alert">{error}</p>}
         <p className="note">Los porcentajes muestran la confianza de cada modelo, no una probabilidad calibrada.</p>
       </div>
-      <ResultCard name="CNN" status={status} data={result?.cnn} />
-      <ResultCard name="LSTM" status={status} data={result?.lstm} />
+      <div className="pane pane--light results">
+        <ResultCard name="CNN" status={status} data={result?.cnn} />
+        <ResultCard name="LSTM" status={status} data={result?.lstm} />
+      </div>
     </section>
   );
 }

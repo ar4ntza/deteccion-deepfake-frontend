@@ -68,29 +68,35 @@ const ITEMS = [
 export default function About() {
   const [open, setOpen] = useState(0);
   return (
-    <div className="about-layout">
-      <aside className="rail" aria-hidden="true"><span>Acerca del proyecto</span></aside>
-      <section className="acc" aria-label="Acerca del proyecto">
-        {ITEMS.map((it, i) => {
-          const isOpen = open === i, id = `acc-${i}`;
-          return (
-            <article key={id} className={`acc-item ${isOpen ? 'is-open' : ''}`}>
-              <h2>
-                <button className="acc-head" aria-expanded={isOpen} aria-controls={`${id}-p`}
-                  aria-labelledby={`${id}-t`} aria-describedby={`${id}-d`} onClick={() => setOpen(isOpen ? -1 : i)}>
-                  <span className="acc-num">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="acc-title" id={`${id}-t`}>{it.t}</span>
-                  <span className="acc-desc" id={`${id}-d`}>{it.d}</span>
-                  <span className="acc-plus" aria-hidden="true" />
-                </button>
-              </h2>
-              <div className="acc-panel" id={`${id}-p`} role="region" aria-labelledby={`${id}-t`}>
-                <div className="acc-inner answer">{it.body}</div>
-              </div>
-            </article>
-          );
-        })}
-      </section>
-    </div>
+    <section className="split">
+      <div className="pane pane--color about-intro">
+        <h1 className="display display--md">Acerca del proyecto</h1>
+        <span className="rule" />
+        <p className="lead">Detección de audios deepfake con una CNN y una LSTM.</p>
+      </div>
+      <div className="pane pane--light">
+        <div className="acc">
+          {ITEMS.map((it, i) => {
+            const isOpen = open === i, id = `acc-${i}`;
+            return (
+              <article key={id} className={`acc-item ${isOpen ? 'is-open' : ''}`}>
+                <h2>
+                  <button className="acc-head" aria-expanded={isOpen} aria-controls={`${id}-p`}
+                    aria-labelledby={`${id}-t`} aria-describedby={`${id}-d`} onClick={() => setOpen(isOpen ? -1 : i)}>
+                    <span className="acc-num">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="acc-title" id={`${id}-t`}>{it.t}</span>
+                    <span className="acc-desc" id={`${id}-d`}>{it.d}</span>
+                    <span className="acc-plus" aria-hidden="true" />
+                  </button>
+                </h2>
+                <div className="acc-panel" id={`${id}-p`} role="region" aria-labelledby={`${id}-t`}>
+                  <div className="acc-inner answer">{it.body}</div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </section>
   );
 }
