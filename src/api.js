@@ -7,11 +7,14 @@ const API_URL = import.meta.env.VITE_API_URL;
 export async function analyzeAudio(file) {
   if (!API_URL) {
     await new Promise((r) => setTimeout(r, 3000));
-    const rnd = () => Math.random();
-    return {
-      cnn: { prob_fake: rnd() * 0.15, ms: Math.round(30 + rnd() * 30) },
-      lstm: { prob_fake: 0.15 + rnd() * 0.6, ms: Math.round(50 + rnd() * 40) },
-    };
+    const todos = [];
+    for (const arq of ['cnn', 'lstm'])
+      for (const cond of ['A', 'B', 'C']) {
+        const p = cond === 'A' ? 0.3 + Math.random() * 0.4 : arq === 'cnn' ? Math.random() * 0.15 : 0.15 + Math.random() * 0.6;
+        todos.push({ modelo: `${arq.toUpperCase()} · ${cond}`, arquitectura: arq, condicion: cond,
+          fake: Math.round(p * 1000) / 10, real: Math.round((1 - p) * 1000) / 10 });
+      }
+    return pick(todos);
   }
   const body = new FormData();
   body.append('audio', file);
@@ -24,10 +27,14 @@ export async function analyzeAudio(file) {
     throw err;
   }
   const { resultados, ms_total } = await res.json();
-  // Por ahora la interfaz muestra la condición B (preentrenado + afinado); `todos` queda listo para las demás.
-  const pick = (arq, cond = 'B') => {
-    const r = resultados.find((x) => x.arquitectura === arq && x.condicion === cond);
+  return { ...pick(resultados), ms_total };
+}
+
+// tarjetas principales: condición B (preentrenado + afinado). `todos` alimenta "Ver otras condiciones".
+function pick(todos) {
+  const get = (arq) => {
+    const r = todos.find((x) => x.arquitectura === arq && x.condicion === 'B');
     return r && { prob_fake: r.fake / 100 };
   };
-  return { cnn: pick('cnn'), lstm: pick('lstm'), todos: resultados, ms_total };
+  return { cnn: get('cnn'), lstm: get('lstm'), todos };
 }
