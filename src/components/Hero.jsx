@@ -66,7 +66,7 @@ export default function Hero({ onStart }) {
       <div className="pane pane--color hero-copy">
         <p className="slogan">Que ninguna voz te engañe.</p>
         <h1 className="display">Detección de audios deepfake</h1>
-        <p className="lead">Sube un audio y dos redes neuronales, una CNN y una LSTM, te dicen si la voz es real o sintética.</p>
+        <p className="lead">Hoy es posible imitar una voz con inteligencia artificial, y suena cada vez más real. Sube una grabación y analizaremos si la voz es de una persona o la creó una computadora.</p>
         <button className="btn" onClick={onStart}>Comenzar</button>
       </div>
       <div className="pane pane--light torus"><FuzzyTorus /></div>
