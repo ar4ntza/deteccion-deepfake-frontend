@@ -63,7 +63,10 @@ export default function Analyzer() {
       return setError(`El audio pesa más de ${MAX_MB} MB. Prueba con uno más corto.`);
     setFile(f); setError(''); setResult(null); setStatus('loading');
     try { setResult(await analyzeAudio(f)); setStatus('done'); }
-    catch { setStatus('error'); setError('No pudimos analizar el audio. Revisa que el servidor esté activo e inténtalo de nuevo.'); }
+    catch (e) {
+      setStatus('error');
+      setError(e.status >= 400 && e.status < 500 ? e.message : 'No pudimos analizar el audio. Revisa que el servidor esté activo e inténtalo de nuevo.');
+    }
   }
 
   const open = () => !busy && input.current.click();
