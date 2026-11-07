@@ -4,7 +4,18 @@ import { analyzeAudio } from '../api';
 const MAX_MB = 25;
 const N = 72;
 
-function Gauge({ pct, fake, ms }) {
+// Condiciones adicionales que se muestran en "Ver otras condiciones" (la B es el resultado principal).
+const CONDICIONES = [
+  { id: 'A', titulo: 'Modelo base', texto: 'Aprendió con voces de varios idiomas y nunca escuchó español.' },
+  { id: 'C', titulo: 'Solo español', texto: 'Aprendió únicamente con voces en español, sin el entrenamiento previo.' },
+];
+
+const veredicto = (fakePct) => {
+  const fake = fakePct >= 50;
+  return { fake, pct: Math.round(fake ? fakePct : 100 - fakePct) };
+};
+
+function Gauge({ pct, fake }) {
   const [on, setOn] = useState(false);
   useEffect(() => { const id = requestAnimationFrame(() => setOn(true)); return () => cancelAnimationFrame(id); }, []);
   const lit = pct == null ? 0 : Math.round((N * pct) / 100);
@@ -19,7 +30,6 @@ function Gauge({ pct, fake, ms }) {
           className={`bar ${i < lit && on ? 'on' : ''} ${fake ? 'fake' : 'real'}`}
           style={{ transitionDelay: `${i * 14}ms` }} />;
       })}
-      {ms != null && <text x="100" y="104" className="gauge-ms">{ms} ms</text>}
     </svg>
   );
 }
@@ -32,17 +42,52 @@ function LoadingWaves() {
   );
 }
 
-function ResultCard({ name, status, data }) {
-  const fake = data ? data.prob_fake >= 0.5 : false;
-  const pct = data ? Math.round((fake ? data.prob_fake : 1 - data.prob_fake) * 100) : null;
+function ResultCard({ name, sub, tone, status, data }) {
+  const v = data ? veredicto(data.prob_fake * 100) : null;
   return (
-    <section className={`tile tile--${name === 'CNN' ? 'a' : 'b'}`} aria-live="polite">
+    <section className={`tile tile--${tone}`} aria-live="polite">
       <h3>Modelo {name}</h3>
-      {status === 'loading' ? <LoadingWaves /> : <Gauge key={data?.prob_fake} pct={pct} fake={fake} ms={data?.ms} />}
+      <p className="tile-sub">{sub}</p>
+      {status === 'loading' ? <LoadingWaves /> : <Gauge key={data?.prob_fake} pct={v?.pct} fake={v?.fake} />}
       <p className="verdict">
-        {status === 'loading' ? 'Analizando…' : pct == null ? 'Sin resultado' : <><strong>{pct}%</strong>{fake ? 'fake' : 'real'}</>}
+        {status === 'loading' ? 'Analizando…' : !v ? 'Sin resultado' : <><strong>{v.pct}%</strong>{v.fake ? 'voz falsa' : 'voz real'}</>}
       </p>
     </section>
+  );
+}
+
+function OtherConditions({ todos }) {
+  const [open, setOpen] = useState(false);
+  const filas = CONDICIONES.map((c) => ({
+    ...c, items: ['cnn', 'lstm'].map((a) => todos.find((r) => r.arquitectura === a && r.condicion === c.id)).filter(Boolean),
+  })).filter((c) => c.items.length);
+  if (!filas.length) return null;
+  return (
+    <>
+      <button className="btn btn--dark" aria-expanded={open} aria-controls="otras-condiciones" onClick={() => setOpen(!open)}>
+        {open ? 'Ocultar otras condiciones' : 'Ver otras condiciones'}
+      </button>
+      <div id="otras-condiciones" className={`more ${open ? 'is-open' : ''}`}>
+        <div className="more-inner">
+          {filas.map((c) => (
+            <section key={c.id} className="cond">
+              <h4>{c.titulo}</h4>
+              <p>{c.texto}</p>
+              {c.items.map((r) => {
+                const v = veredicto(r.fake);
+                return (
+                  <div className="mini" key={r.arquitectura}>
+                    <span className="mini-name">{r.arquitectura.toUpperCase()}</span>
+                    <span className="mini-bar" aria-hidden="true"><i className={v.fake ? 'fake' : 'real'} style={{ width: `${v.pct}%` }} /></span>
+                    <span className="mini-val">{v.pct} % {v.fake ? 'voz falsa' : 'voz real'}</span>
+                  </div>
+                );
+              })}
+            </section>
+          ))}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -77,7 +122,9 @@ export default function Analyzer() {
         <span className="rule" />
         <h3>¿Cómo funciona?</h3>
         <ol className="steps">
-          <li>Carga tu audio</li><li>Los modelos lo procesan</li><li>Te entregamos los resultados</li>
+          <li><strong>Sube tu audio.</strong><span>Elige una grabación de voz desde tu equipo o arrástrala aquí. Aceptamos WAV, MP3, FLAC y OGG de hasta {MAX_MB} MB.</span></li>
+          <li><strong>Dos programas lo escuchan.</strong><span>Convertimos el sonido en una imagen que muestra cómo cambia su tono con el tiempo. Dos inteligencias artificiales la revisan, cada una a su manera: una la mira como una fotografía, buscando texturas; la otra la sigue como una melodía, atenta al ritmo y a cómo se enlazan los sonidos.</span></li>
+          <li><strong>Recibes un porcentaje.</strong><span>Cada una indica qué tan segura está de que la voz sea real o falsa. Es normal que no siempre coincidan: miran el audio de formas distintas.</span></li>
         </ol>
         <div className={`drop ${over ? 'is-over' : ''}`} role="button" tabIndex={0} aria-disabled={busy}
           onClick={open} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), open())}
@@ -89,11 +136,19 @@ export default function Analyzer() {
             onChange={(e) => { handle(e.target.files[0]); e.target.value = ''; }} />
         </div>
         {error && <p className="error" role="alert">{error}</p>}
-        <p className="note">Los porcentajes muestran la confianza de cada modelo, no una probabilidad calibrada.</p>
+        <p className="note">Los porcentajes indican la confianza de cada modelo, no una certeza: ningún resultado es definitivo.</p>
       </div>
       <div className="pane pane--light results">
-        <ResultCard name="CNN" status={status} data={result?.cnn} />
-        <ResultCard name="LSTM" status={status} data={result?.lstm} />
+        <div className="tiles">
+          <ResultCard name="CNN" sub="Mira el audio como una imagen" tone="a" status={status} data={result?.cnn} />
+          <ResultCard name="LSTM" sub="Sigue el audio como una secuencia" tone="b" status={status} data={result?.lstm} />
+        </div>
+        <p className="caption">
+          {status === 'done'
+            ? 'Resultado principal: modelos que partieron del modelo base y se ajustaron con voces en español.'
+            : 'Aquí aparecerá el resultado de cada modelo.'}
+        </p>
+        {status === 'done' && result?.todos && <OtherConditions todos={result.todos} />}
       </div>
     </section>
   );
