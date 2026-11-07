@@ -10,13 +10,6 @@ export default function App() {
   return (
     <div className="stage">
       <header className="topbar">
-        <div className="inst">
-          <img className="inst-logo" src={logo} alt="Ibero Puebla" />
-          <div className="inst-text">
-            <strong>Universidad Iberoamericana Puebla</strong>
-            <span>Área de Síntesis y Evaluación: desarrollo de proyectos</span>
-          </div>
-        </div>
         <nav className="nav">
           {view !== 'home' && <button className="navlink" onClick={() => setView('home')}>Inicio</button>}
           <button className="navlink" aria-current={view === 'about' ? 'page' : undefined}
@@ -28,6 +21,15 @@ export default function App() {
         {view === 'analyze' && <Analyzer />}
         {view === 'about' && <About />}
       </main>
+      <footer className="footer">
+        <div className="inst">
+          <img className="inst-logo" src={logo} alt="Ibero Puebla" />
+          <div className="inst-text">
+            <strong>Universidad Iberoamericana Puebla</strong>
+            <span>Área de Síntesis y Evaluación: desarrollo de proyectos</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
