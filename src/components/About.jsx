@@ -16,8 +16,8 @@ const ITEMS = [
     d: 'Dos redes neuronales entrenadas en dos etapas y evaluadas por persona.',
     body: (
       <>
-        <p>El entrenamiento usa transferencia de aprendizaje. En la primera etapa, cada red aprende desde cero con unos 16,500 audios multilingües (9,569 reales y 6,977 falsos) qué distingue una voz humana de una sintética, sin depender de un idioma. En la segunda, se reemplaza la última capa y se ajusta la red con 963 audios en español (502 reales y 461 falsos) de 21 personas: primero solo la capa de decisión y después toda la red con pasos más pequeños.</p>
-        <p>Para evaluar se usa validación cruzada por persona, con 7 particiones: en cada ronda, las personas que se prueban nunca aparecen en el entrenamiento, y así cada audio en español se prueba una vez sin haber sido visto. Antes de entrenar se apartaron los audios duplicados (246 en el conjunto multilingüe y 40 en español).</p>
+        <p>El entrenamiento usa transferencia de aprendizaje. En la primera etapa, cada red aprende desde cero con unos 16,500 audios multilingües (9,569 reales y 6,977 falsos) qué distingue una voz humana de una sintética, sin depender de un idioma. En la segunda, se reemplaza la última capa y se ajusta la red con audios en español de varias fuentes (HISPASpoof, CIEMPIESS, conferencias y grabaciones de otras personas): primero solo la capa de decisión y después toda la red con pasos más pequeños. Durante el entrenamiento se simulan distintas condiciones de grabación, como el ruido de fondo o el micrófono, para que el modelo no se apoye en ellas.</p>
+        <p>Para evaluar se usa validación cruzada por persona, con 7 particiones: en cada ronda, las personas que se prueban no aparecen en el entrenamiento (salvo algunos hablantes de HISPASpoof, ver limitaciones), y así cada audio en español se prueba una vez sin haber sido visto. Además se probó con voces creadas por herramientas que el modelo nunca vio: fish-speech y xtts-v1.</p>
         <p>Cada red se entrena en tres condiciones, que el sistema muestra por separado: <strong>A</strong>, preentrenada con audios multilingües y sin conocer español; <strong>B</strong>, preentrenada y afinada con español, que es el resultado principal; y <strong>C</strong>, entrenada solo con español, como punto de comparación. Los resultados de B y C promedian siete modelos, uno por partición.</p>
         <dl className="facts">
           <div><dt>CNN · ≈404,900 parámetros</dt><dd>Trata el espectrograma como una imagen. Sus filtros detectan texturas y patrones locales, de los más simples a los más complejos.</dd></div>
@@ -32,7 +32,7 @@ const ITEMS = [
     body: (
       <>
         <p>Cada modelo muestra la clase que considera más probable y su porcentaje. Por ejemplo, «78 % voz falsa» significa que el modelo asigna 78 % a que la voz es falsa y 22 % a que es real. Los porcentajes se calibran con datos de validación, de modo que 50 % es el punto en el que cada modelo cambia de opinión.</p>
-        <p>Es normal que la CNN y la LSTM no siempre coincidan: analizan el audio de formas distintas, y por eso se comparan. Si el audio dura más de 10 segundos, se analizan hasta 8 fragmentos y se promedian sus resultados; si dura menos, se repite su contenido hasta completar la ventana de análisis.</p>
+        <p>Es normal que la CNN y la LSTM no siempre coincidan: analizan el audio de formas distintas, y por eso se comparan. Si el audio dura más de 10 segundos, se analizan hasta 8 fragmentos y se promedian sus resultados; si dura menos, se repite su contenido hasta completar la ventana de análisis. Antes del análisis, todos los audios se llevan a la misma banda de frecuencias (hasta 8 kHz), para que una nota de voz de celular y una grabación de estudio sean comparables.</p>
         <p>El botón «Ver otras condiciones» muestra cómo responden las versiones A y C de cada modelo. Sirven para comparar, no son el resultado principal.</p>
         <p>El porcentaje es la confianza del modelo, no una certeza: ningún resultado es definitivo.</p>
       </>
@@ -43,10 +43,12 @@ const ITEMS = [
     d: 'Lo que conviene tener presente antes de confiar en un resultado.',
     body: (
       <dl className="facts">
-        <div><dt>Resultados dentro del conjunto de datos</dt><dd>Los modelos afinados casi no se equivocan con las voces del conjunto en español, pero eso no demuestra que detecten voces falsas creadas con otras herramientas que no están en esos datos.</dd></div>
-        <div><dt>Pocas personas</dt><dd>El conjunto en español tiene 21 personas. Las pruebas separan a las personas entre entrenamiento y evaluación, pero con más voces los resultados podrían variar.</dd></div>
+        <div><dt>Voces de herramientas nuevas</dt><dd>Con voces creadas por herramientas que no estaban en el entrenamiento (fish-speech y xtts-v1), la exactitud bajó a cerca de 93 % en la CNN y 82 % en la LSTM (condiciones B y C).</dd></div>
+        <div><dt>Audios de celular</dt><dd>Con notas de voz de celular, el sistema todavía marca como falsas algunas voces reales: acepta como reales cerca del 62 % de las que probamos. Son pocas decenas de audios, así que la cifra es aproximada. Por eso conviene mirar el porcentaje y no solo la etiqueta.</dd></div>
+        <div><dt>La LSTM es menos confiable</dt><dd>En las pruebas, la CNN superó a la LSTM de forma significativa, así que la LSTM puede fallar más, sobre todo con audios distintos a los del entrenamiento. La condición A (modelo base) detecta pocas voces falsas en español y no debe tomarse como resultado final.</dd></div>
         <div><dt>Tipos de síntesis</dt><dd>Los modelos solo conocen los métodos de generación presentes en sus datos. Con técnicas nuevas, el desempeño puede caer.</dd></div>
-        <div><dt>Condiciones de grabación</dt><dd>Un diagnóstico del proyecto mostró que, en el conjunto en español, las voces reales y falsas también se distinguen por el ruido de fondo y la calidad de la grabación, no solo por la voz. Con grabaciones hechas en otras condiciones, el modelo podría fallar.</dd></div>
+        <div><dt>Condiciones de grabación</dt><dd>Un diagnóstico del proyecto mostró que, en español, las voces reales y falsas también se distinguen por el ruido de fondo y la calidad de la grabación, no solo por la voz. Por eso se simulan distintas condiciones al entrenar, pero con grabaciones muy distintas el modelo aún puede fallar.</dd></div>
+        <div><dt>Datos y entrenamiento</dt><dd>El conjunto HISPASpoof comparte 24 hablantes entre sus particiones, así que la prueba con herramientas de voz nuevas es más fiable que la de hablantes. Además, los modelos se entrenaron con una sola semilla, por lo que no medimos cuánto varían los resultados entre entrenamientos.</dd></div>
         <div><dt>Confianza, no certeza</dt><dd>Los porcentajes indican qué tan seguro está cada modelo, no la certeza de que el audio sea real o falso.</dd></div>
       </dl>
     ),

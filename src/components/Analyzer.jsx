@@ -6,7 +6,7 @@ const N = 72;
 
 // Condiciones adicionales que se muestran en "Ver otras condiciones" (la B es el resultado principal).
 const CONDICIONES = [
-  { id: 'A', titulo: 'Modelo base', texto: 'Aprendió con voces de varios idiomas y nunca escuchó español.' },
+  { id: 'A', titulo: 'Modelo base', texto: 'Aprendió con voces de varios idiomas y nunca escuchó español. Es la menos confiable: detecta pocas voces falsas en español.' },
   { id: 'C', titulo: 'Solo español', texto: 'Aprendió únicamente con voces en español, sin el entrenamiento previo.' },
 ];
 
@@ -145,7 +145,7 @@ export default function Analyzer() {
         </div>
         <p className="caption">
           {status === 'done'
-            ? 'Resultado principal: modelos que partieron del modelo base y se ajustaron con voces en español.'
+            ? 'Resultado principal: modelos que partieron del modelo base y se ajustaron con voces en español. En nuestras pruebas, el modelo CNN resultó más confiable que el LSTM.'
             : 'Aquí aparecerá el resultado de cada modelo.'}
         </p>
         {status === 'done' && result?.todos && <OtherConditions todos={result.todos} />}
