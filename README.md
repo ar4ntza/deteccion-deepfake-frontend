@@ -1,7 +1,6 @@
 # Detector de audio deepfake · Frontend
 
 Interfaz web del proyecto **Evaluación de modelos CNN y LSTM mediante representaciones espectrales para la detección de audios sintéticos**.
-Universidad Iberoamericana Puebla · Área de Síntesis y Evaluación: desarrollo de proyectos.
 ---
 
 ## Descripción
