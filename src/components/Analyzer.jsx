@@ -123,7 +123,7 @@ export default function Analyzer() {
         <h3>¿Cómo funciona?</h3>
         <ol className="steps">
           <li><strong>Sube tu audio.</strong><span>Elige una grabación de voz desde tu equipo o arrástrala aquí. Aceptamos WAV, MP3, FLAC y OGG de hasta {MAX_MB} MB.</span></li>
-          <li><strong>Dos programas lo escuchan.</strong><span>Convertimos el sonido en una imagen que muestra cómo cambia su tono con el tiempo. Dos inteligencias artificiales la revisan, cada una a su manera: una la mira como una fotografía, buscando texturas; la otra la sigue como una melodía, atenta al ritmo y a cómo se enlazan los sonidos.</span></li>
+          <li><strong>Dos programas lo escuchan.</strong><span>Convertimos el sonido en una imagen que muestra cómo cambia su tono con el tiempo. Dos modelos de redes neuronales la revisan, cada una a su manera: una la mira como una fotografía, buscando texturas; la otra la sigue como una melodía, atenta al ritmo y a cómo se enlazan los sonidos.</span></li>
           <li><strong>Recibes un porcentaje.</strong><span>Cada una indica qué tan segura está de que la voz sea real o falsa. Es normal que no siempre coincidan: miran el audio de formas distintas.</span></li>
         </ol>
         <div className={`drop ${over ? 'is-over' : ''}`} role="button" tabIndex={0} aria-disabled={busy}
