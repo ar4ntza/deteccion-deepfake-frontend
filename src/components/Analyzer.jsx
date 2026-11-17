@@ -4,7 +4,21 @@ import { analyzeAudio } from '../api';
 const MAX_MB = 25;
 const N = 72;
 
-// Condiciones adicionales que se muestran en "Ver otras condiciones" (la B es el resultado principal).
+const PASOS = [
+  { t: 'Carga tu archivo de audio.', d: `Selecciona una grabación de voz desde tu equipo o arrástrala al área indicada. El sistema admite archivos en formato WAV, MP3, FLAC y OGG, con un tamaño máximo de ${MAX_MB} MB.` },
+  { t: 'Dos programas lo escuchan.', d: 'El sistema transforma el audio en una representación visual que permite observar cómo varía su frecuencia a lo largo del tiempo. Dos modelos de inteligencia artificial analizan esta representación con enfoques complementarios: uno identifica patrones visuales, como texturas y características espaciales; mientras que el otro analiza las variaciones temporales y las relaciones entre los sonidos.' },
+  { t: 'Recibes un porcentaje.', d: 'Cada modelo proporciona un porcentaje de confianza que indica qué tan probable considera que la voz sea auténtica o generada artificialmente. Los resultados pueden diferir entre ambos modelos, ya que cada uno evalúa características distintas de la representación del audio.' },
+];
+
+// Mensajes de la pantalla de carga. Avanzan por tiempo (el servidor no informa su progreso real).
+const ETAPAS = [
+  'Procesando tu audio…',
+  'Generando el espectrograma…',
+  'Dos inteligencias artificiales lo están escuchando…',
+  'Calculando los porcentajes…',
+];
+
+// Condiciones adicionales de "Ver otras condiciones" (la B es el resultado principal).
 const CONDICIONES = [
   { id: 'A', titulo: 'Modelo base', texto: 'Aprendió con voces de varios idiomas y nunca escuchó español. Es la menos confiable: detecta pocas voces falsas en español.' },
   { id: 'C', titulo: 'Solo español', texto: 'Aprendió únicamente con voces en español, sin el entrenamiento previo.' },
@@ -14,6 +28,10 @@ const veredicto = (fakePct) => {
   const fake = fakePct >= 50;
   return { fake, pct: Math.round(fake ? fakePct : 100 - fakePct) };
 };
+
+const Blur = () => (
+  <div className="blur" aria-hidden="true"><i className="b1" /><i className="b2" /><i className="b3" /><i className="b4" /></div>
+);
 
 function Gauge({ pct, fake }) {
   const [on, setOn] = useState(false);
@@ -34,24 +52,22 @@ function Gauge({ pct, fake }) {
   );
 }
 
-function LoadingWaves() {
+function LoadingWaves({ count = 40 }) {
   return (
-    <div className="waves" role="status" aria-label="Analizando audio">
-      {Array.from({ length: 22 }, (_, i) => <i key={i} style={{ '--i': i }} />)}
+    <div className="waves waves--xl" aria-hidden="true">
+      {Array.from({ length: count }, (_, i) => <i key={i} style={{ '--i': i }} />)}
     </div>
   );
 }
 
-function ResultCard({ name, sub, tone, status, data }) {
+function ResultCard({ name, sub, tone, data }) {
   const v = data ? veredicto(data.prob_fake * 100) : null;
   return (
-    <section className={`tile tile--${tone}`} aria-live="polite">
+    <section className={`tile tile--${tone}`}>
       <h3>Modelo {name}</h3>
       <p className="tile-sub">{sub}</p>
-      {status === 'loading' ? <LoadingWaves /> : <Gauge key={data?.prob_fake} pct={v?.pct} fake={v?.fake} />}
-      <p className="verdict">
-        {status === 'loading' ? 'Analizando…' : !v ? 'Sin resultado' : <><strong>{v.pct}%</strong>{v.fake ? 'voz falsa' : 'voz real'}</>}
-      </p>
+      <Gauge key={data?.prob_fake} pct={v?.pct} fake={v?.fake} />
+      <p className="verdict">{!v ? 'Sin resultado' : <><strong>{v.pct}%</strong>{v.fake ? 'voz falsa' : 'voz real'}</>}</p>
     </section>
   );
 }
@@ -91,64 +107,132 @@ function OtherConditions({ todos }) {
   );
 }
 
+// Reproductor del audio que envió la persona
+function AudioPlayer({ src, nombre }) {
+  const ref = useRef(null);
+  const [playing, setPlaying] = useState(false);
+  const [t, setT] = useState(0);
+  const [dur, setDur] = useState(0);
+  const [fallo, setFallo] = useState(false);
+  const fmt = (s) => (Number.isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}` : '0:00');
+  const toggle = () => { const a = ref.current; if (a.paused) a.play().catch(() => setFallo(true)); else a.pause(); };
+  return (
+    <div>
+      <p className="filename">{nombre}</p>
+      <div className="player">
+        <audio ref={ref} src={src} preload="metadata" onError={() => setFallo(true)}
+          onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => { setPlaying(false); setT(0); }}
+          onTimeUpdate={(e) => setT(e.currentTarget.currentTime)} onLoadedMetadata={(e) => setDur(e.currentTarget.duration)} />
+        <button className="player-btn" onClick={toggle} aria-label={playing ? 'Pausar audio' : 'Escuchar tu audio'}>
+          {playing
+            ? <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor" /></svg>
+            : <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor" /></svg>}
+        </button>
+        <input type="range" min="0" max={Number.isFinite(dur) ? dur : 0} step="0.01" value={t} aria-label="Posición del audio"
+          onChange={(e) => { ref.current.currentTime = +e.target.value; setT(+e.target.value); }} />
+        <span className="player-time">{fmt(t)} / {fmt(dur)}</span>
+      </div>
+      {fallo && <p className="error">Tu navegador no puede reproducir este formato de audio.</p>}
+    </div>
+  );
+}
+
 export default function Analyzer() {
   const [file, setFile] = useState(null);
-  const [status, setStatus] = useState('idle'); // idle | loading | done | error
+  const [url, setUrl] = useState(null);
+  const [status, setStatus] = useState('idle'); // idle | loading | done
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [over, setOver] = useState(false);
+  const [etapa, setEtapa] = useState(0);
   const input = useRef(null);
-  const busy = status === 'loading';
+  const urlRef = useRef(null);
+
+  useEffect(() => () => { if (urlRef.current) URL.revokeObjectURL(urlRef.current); }, []);
+  useEffect(() => {
+    if (status !== 'loading') return;
+    setEtapa(0);
+    const id = setInterval(() => setEtapa((e) => Math.min(e + 1, ETAPAS.length - 1)), 2200);
+    return () => clearInterval(id);
+  }, [status]);
+
+  const soltar = () => { if (urlRef.current) { URL.revokeObjectURL(urlRef.current); urlRef.current = null; } setUrl(null); };
+  const reiniciar = (msg = '') => { soltar(); setFile(null); setResult(null); setError(msg); setStatus('idle'); };
 
   async function handle(f) {
-    if (!f || busy) return;
+    if (!f || status === 'loading') return;
     if (!f.type.startsWith('audio/') && !/\.(wav|mp3|flac|ogg|m4a|aac)$/i.test(f.name))
       return setError('El archivo debe ser de audio (WAV, MP3, FLAC, OGG o M4A).');
     if (f.size > MAX_MB * 1024 * 1024)
       return setError(`El audio pesa más de ${MAX_MB} MB. Prueba con uno más corto.`);
+    soltar(); urlRef.current = URL.createObjectURL(f); setUrl(urlRef.current);
     setFile(f); setError(''); setResult(null); setStatus('loading');
     try { setResult(await analyzeAudio(f)); setStatus('done'); }
     catch (e) {
-      setStatus('error');
-      setError(e.status >= 400 && e.status < 500 ? e.message : 'No pudimos analizar el audio. Revisa que el servidor esté activo e inténtalo de nuevo.');
+      reiniciar(e.status >= 400 && e.status < 500 ? e.message : 'No pudimos analizar el audio. Revisa que el servidor esté activo e inténtalo de nuevo.');
     }
   }
 
-  const open = () => !busy && input.current.click();
+  // ---- Pantalla 2: procesando ----
+  if (status === 'loading') {
+    return (
+      <section className="screen screen--light">
+        <Blur />
+        <div className="proc">
+          <LoadingWaves />
+          <div role="status" aria-live="polite"><p className="proc-msg" key={etapa}>{ETAPAS[etapa]}</p></div>
+          <div className="proc-steps" aria-hidden="true">{ETAPAS.map((_, i) => <i key={i} className={i <= etapa ? 'on' : ''} />)}</div>
+          <p className="proc-file">{file?.name}</p>
+        </div>
+      </section>
+    );
+  }
+
+  // ---- Pantalla 3: resultados ----
+  if (status === 'done') {
+    return (
+      <section className="split">
+        <div className="pane pane--color panel">
+          <h2>Resultados</h2>
+          <span className="rule" />
+          <p className="lead">Esto fue lo que escucharon los modelos en tu audio. Puedes volver a oírlo aquí.</p>
+          <AudioPlayer src={url} nombre={file?.name} />
+          <p className="note">Los porcentajes indican la confianza de cada modelo, no una certeza: ningún resultado es definitivo.</p>
+          <button className="btn" onClick={() => reiniciar()}>Analizar otro audio</button>
+        </div>
+        <div className="pane pane--light results">
+          <div className="tiles">
+            <ResultCard name="CNN" sub="Mira el audio como una imagen" tone="a" data={result?.cnn} />
+            <ResultCard name="LSTM" sub="Sigue el audio como una secuencia" tone="b" data={result?.lstm} />
+          </div>
+          <p className="caption">Resultado principal: modelos que partieron del modelo base y se ajustaron con voces en español. En nuestras pruebas, el modelo CNN resultó más confiable que el LSTM.</p>
+          {result?.todos && <OtherConditions todos={result.todos} />}
+        </div>
+      </section>
+    );
+  }
+
+  // ---- Pantalla 1: cómo funciona + carga del audio ----
+  const open = () => input.current.click();
   return (
-    <section className="split">
-      <div className="pane pane--color panel">
-        <h2>Detección de audio</h2>
-        <span className="rule" />
-        <h3>¿Cómo funciona?</h3>
-        <ol className="steps">
-          <li><strong>Sube tu audio.</strong><span>Elige una grabación de voz desde tu equipo o arrástrala aquí. Aceptamos WAV, MP3, FLAC y OGG de hasta {MAX_MB} MB.</span></li>
-          <li><strong>Dos programas lo escuchan.</strong><span>Convertimos el sonido en una imagen que muestra cómo cambia su tono con el tiempo. Dos modelos de redes neuronales la revisan, cada una a su manera: una la mira como una fotografía, buscando texturas; la otra la sigue como una melodía, atenta al ritmo y a cómo se enlazan los sonidos.</span></li>
-          <li><strong>Recibes un porcentaje.</strong><span>Cada una indica qué tan segura está de que la voz sea real o falsa. Es normal que no siempre coincidan: miran el audio de formas distintas.</span></li>
+    <section className="screen screen--light">
+      <Blur />
+      <span className="side-label" aria-hidden="true">Detección de audio</span>
+      <div className="howto-inner">
+        <h1 className="howto-title">¿Cómo funciona?</h1>
+        <ol className="howto-steps">
+          {PASOS.map((p) => <li key={p.t}><strong>{p.t}</strong><span>{p.d}</span></li>)}
         </ol>
-        <div className={`drop ${over ? 'is-over' : ''}`} role="button" tabIndex={0} aria-disabled={busy}
+        <div className={`drop ${over ? 'is-over' : ''}`} role="button" tabIndex={0}
           onClick={open} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), open())}
           onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); handle(e.dataTransfer.files[0]); }}>
-          <strong>{busy ? 'Procesando…' : 'Sube o arrastra tu audio'}</strong>
-          <span>{file ? file.name : `WAV, MP3, FLAC u OGG · hasta ${MAX_MB} MB`}</span>
+          <strong>Sube o arrastra tu audio</strong>
+          <span>WAV, MP3, FLAC u OGG · hasta {MAX_MB} MB</span>
           <input ref={input} type="file" accept="audio/*" className="sr" tabIndex={-1}
             onChange={(e) => { handle(e.target.files[0]); e.target.value = ''; }} />
         </div>
         {error && <p className="error" role="alert">{error}</p>}
-        <p className="note">Los porcentajes indican la confianza de cada modelo, no una certeza: ningún resultado es definitivo.</p>
-      </div>
-      <div className="pane pane--light results">
-        <div className="tiles">
-          <ResultCard name="CNN" sub="Mira el audio como una imagen" tone="a" status={status} data={result?.cnn} />
-          <ResultCard name="LSTM" sub="Sigue el audio como una secuencia" tone="b" status={status} data={result?.lstm} />
-        </div>
-        <p className="caption">
-          {status === 'done'
-            ? 'Resultado principal: modelos que partieron del modelo base y se ajustaron con voces en español. En nuestras pruebas, el modelo CNN resultó más confiable que el LSTM.'
-            : 'Aquí aparecerá el resultado de cada modelo.'}
-        </p>
-        {status === 'done' && result?.todos && <OtherConditions todos={result.todos} />}
       </div>
     </section>
   );
